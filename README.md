@@ -1,5 +1,5 @@
-## dataset-transform
-# Strongly typed Scala operations for working with Spark Datasets
+# dataset-transform
+## Strongly typed Scala operations for working with Spark Datasets
 
 The addition of DataSets to Spark was a big step forward for Scala developers
 by providing statically typing rather than the dynamic typing of Dataframes.
