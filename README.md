@@ -18,6 +18,10 @@ The current transforms are:
 * **Sort** (implemented via Dataframe sort operation).
 * **Join** (implemented via DataSet joinWith and Dataframe select operations).
 
+For an example see
+
+    demo/src/main/scala/com/persist/DstDemo.scala
+
 The implementation of these transforms makes use of Scala Whitebox macros.
 These work fine in SBT and Eclipse but unfortunately are not fully supported in 
 Intellij (the JetBrains people tell me that they have no plans to fully support 
