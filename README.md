@@ -14,8 +14,8 @@ takes one or more DataSets and transforms them to produce a new DataSet.
 The current transforms are:
 
 * **Transform** (implemented via RDD map operation).
-* **Select** (implemented via DataFrame select operation).
-* **Sort** (implemented via DataFrame sort operation).
+* **Select** (implemented via Dataframe select operation).
+* **Sort** (implemented via Dataframe sort operation).
 * **Join** (implemented via DataSet joinWith and Dataframe select operations).
 
 The implementation of these transforms makes use of Scala Whitebox macros.
