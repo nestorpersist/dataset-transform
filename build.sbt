@@ -1,4 +1,4 @@
-name := "persist-tf"
+name := "dst"
 
 scalaVersion := "2.11.7"
 
