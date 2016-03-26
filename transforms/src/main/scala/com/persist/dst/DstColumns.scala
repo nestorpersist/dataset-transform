@@ -3,21 +3,20 @@ package com.persist.dst
 import org.apache.spark.sql.Column
 import scala.reflect.runtime.universe._
 
-object Columns {
+object DstColumns {
 
   // TODO desc only available for sort
-  // TODO fix problem with select has only a single value
   // TODO add more operations
   // TODO allow ops other than desc on sort???
 
-  abstract class Transform
+  abstract class DstTransform
 
   private def typeTag[T](implicit tag: WeakTypeTag[T]) = {
     tag
   }
 
 
-  abstract class AnyColumn[TRANSFORM <: Transform] {
+  abstract class DstColumn[TRANSFORM <: DstTransform] {
     val name: String
     val col: Column
 
@@ -25,7 +24,7 @@ object Columns {
 
     private def n = name
 
-    def desc = new AnyColumn[TRANSFORM] {
+    def desc = new DstColumn[TRANSFORM] {
       val col = c.desc
       val name = n + ".desc"
     }
@@ -35,13 +34,13 @@ object Columns {
     }
   }
 
-  abstract class TyColumn[TRANSFORM <: Transform, TCOL: TypeTag]
-    extends AnyColumn[TRANSFORM] {
+  abstract class DstTypedColumn[TRANSFORM <: DstTransform, TCOL: TypeTag]
+    extends DstColumn[TRANSFORM] {
 
-    def ===(other: TyColumn[TRANSFORM, TCOL]) = {
+    def ===(other: DstTypedColumn[TRANSFORM, TCOL]) = {
       val c = col
       val n = name
-      new BooleanColumn[TRANSFORM] {
+      new DstBooleanColumn[TRANSFORM] {
         val name = s"n == ${other.name}"
         val col = c === other.col
       }
@@ -51,21 +50,21 @@ object Columns {
       s"Column($name:${typeTag[TCOL].tpe.toString})"
   }
 
-  abstract class IntColumn[TRANSFORM <: Transform] extends TyColumn[TRANSFORM, Int] {
+  abstract class DstIntColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Int] {
 
     def +(i: Int) = {
       val n = name
       val c = col
-      new IntColumn[TRANSFORM] {
+      new DstIntColumn[TRANSFORM] {
         val name = s"$n + $i"
         val col = c + i
       }
     }
 
-    def +(other: IntColumn[TRANSFORM]) = {
+    def +(other: DstIntColumn[TRANSFORM]) = {
       val c = col
       val n = name
-      new IntColumn[TRANSFORM] {
+      new DstIntColumn[TRANSFORM] {
         val name = s"n + ${other.name}"
         val col = c + other.col
       }
@@ -74,14 +73,14 @@ object Columns {
     def *(i: Int) = {
       val n = name
       val c = col
-      new IntColumn[TRANSFORM] {
+      new DstIntColumn[TRANSFORM] {
         val name = s"$n * $i"
         val col = c * i
       }
     }
   }
 
-  abstract class BooleanColumn[TRANSFORM <: Transform] extends TyColumn[TRANSFORM, Boolean] {
+  abstract class DstBooleanColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Boolean] {
   }
 
 }

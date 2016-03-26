@@ -1,12 +1,13 @@
 package com.persist.dst
 
-import org.apache.spark.sql.Column
+//import org.apache.spark.sql.Column
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
 import scala.reflect.runtime.universe._
-import com.persist.dst.Columns._
+import com.persist.dst.DstColumns._
 
-object Transforms {
+object DstTransforms {
+  // TODO fix problem with select has only a single value
 
   private def getColumnInfo(c: Context)(t: c.universe.Type): Seq[(String, c.universe.Type)] = {
     val names = t.decls
@@ -50,11 +51,11 @@ object Transforms {
     val bcolsExp = getColumns(c)(tb, "_2")
     val fields = newNames map { case (name, ty) =>
       if (ty == c.weakTypeTag[Int]) {
-        tq"IntColumn[ThisTransform]"
+        tq"DstIntColumn[ThisTransform]"
       } else if (ty == c.weakTypeOf[Boolean]) {
-        tq"BooleanColumn[ThisTransform]"
+        tq"DstBooleanColumn[ThisTransform]"
       } else {
-        tq"TyColumn[ThisTransform,$ty]"
+        tq"DstTypedColumn[ThisTransform,$ty]"
       }
     }
     val qargs1 = for (((n, ty), i) <- newNames.zipWithIndex) yield {
@@ -66,15 +67,15 @@ object Transforms {
     val q =
       q"""
          new {
-             class ThisTransform extends Transform
+             class ThisTransform extends DstTransform
              class ThisTransformA extends ThisTransform
              class ThisTransformB extends ThisTransform
 
              val acols = $acolsExp
              val bcols = $bcolsExp
 
-             def map[T](akey: (acols.type) => TyColumn[ThisTransform,T],
-             bkey: (bcols.type)=> TyColumn[ThisTransform,T],
+             def map[T](akey: (acols.type) => DstTypedColumn[ThisTransform,T],
+             bkey: (bcols.type)=> DstTypedColumn[ThisTransform,T],
              fields: (acols.type,bcols.type) => (..$fields)) = {
                 val f = fields(acols,bcols)
                 (dsa:Dataset[$ta],dsb:Dataset[$tb]) => {
@@ -100,11 +101,11 @@ object Transforms {
     val q =
       q"""
          new {
-             class ThisTransform extends Transform
+             class ThisTransform extends DstTransform
 
              val cols = $colsExp
 
-             def map(fields: (cols.type) => Seq[AnyColumn[ThisTransform]]) = {
+             def map(fields: (cols.type) => Seq[DstColumn[ThisTransform]]) = {
                 val f = fields(cols).map(_.col)
                 (ds:Dataset[$t]) => {
                   ds.toDF().sort(f:_*).as[$t]
@@ -128,11 +129,11 @@ object Transforms {
     val colsExp = getColumns(c)(told, "")
     val fields = newNames map { case (name, ty) =>
       if (ty == c.weakTypeTag[Int]) {
-        tq"IntColumn[ThisTransform]"
+        tq"DstIntColumn[ThisTransform]"
       } else if (ty == c.weakTypeOf[Boolean]) {
-        tq"BooleanColumn[ThisTransform]"
+        tq"DstBooleanColumn[ThisTransform]"
       } else {
-        tq"TyColumn[ThisTransform,$ty]"
+        tq"DstTypedColumn[ThisTransform,$ty]"
       }
     }
 
@@ -143,7 +144,7 @@ object Transforms {
     val q =
       q"""
          new {
-             class ThisTransform extends Transform
+             class ThisTransform extends DstTransform
 
              val cols = $colsExp
 
@@ -171,11 +172,11 @@ object Transforms {
       val colNameN = TypeName(colName)
       val nameT = TermName(name)
       val ct = if (tyc == c.weakTypeOf[Int]) {
-        tq"IntColumn[$tytransform]"
+        tq"DstIntColumn[$tytransform]"
       } else if (tyc == c.weakTypeOf[Boolean]) {
-        tq"BooleanColumn[$tytransform]"
+        tq"DstBooleanColumn[$tytransform]"
       } else {
-        tq"TyColumn[$tytransform,$tyc]"
+        tq"DstTypedColumn[$tytransform,$tyc]"
       }
       val q1 =
         q"""

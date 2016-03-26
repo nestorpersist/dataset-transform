@@ -3,8 +3,8 @@ package com.persist
 import org.apache.spark.sql._
 import org.apache.spark.{SparkContext, SparkConf}
 import scala.language.reflectiveCalls
-import com.persist.dst.Transforms._
-import com.persist.dst.Columns._
+import com.persist.dst.DstTransforms._
+import com.persist.dst.DstColumns._
 
 case class ABC(a: Int, b: String, c: String)
 
@@ -12,7 +12,7 @@ case class CA(c: String, a: Int)
 
 case class BOOL(b: Boolean, i: Int)
 
-object DemoDST {
+object DstDemo {
 
 
   class Demo {
