@@ -34,4 +34,4 @@ Whitebox macros).
 Work on this project was supported by 47 Degrees, a Lightbend and DataBricks partner
 with strong expertise in functional programming, Scala and Spark.
 
-    http://www.47deg.com/
+[http://www.47deg.com/](http://www.47deg.com)
