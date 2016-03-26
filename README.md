@@ -21,8 +21,17 @@ The current transforms are:
 For an example see
 
     demo/src/main/scala/com/persist/DstDemo.scala
+    
+To use code include
+
+    "com.persist" % "dataset-transforms_2.11" % "0.0.1"
 
 The implementation of these transforms makes use of Scala Whitebox macros.
 These work fine in SBT and Eclipse but unfortunately are not fully supported in 
 Intellij (the JetBrains people tell me that they have no plans to fully support 
 Whitebox macros).
+
+Work on this project was supported by 47 Degrees, a Lightbend and DataBricks partner
+with strong expertise in functional programming, Scala and Spark.
+
+    http://www.47deg.com/
