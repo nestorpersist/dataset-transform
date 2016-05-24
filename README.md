@@ -20,7 +20,7 @@ The current transforms are:
 * **SqlFilter** (implemented via DataFrame filter operation).
 * **SqlSort** (implemented via DataFrame sort operation).
 * **SqlJoin** (implemented via Dataset joinWith and DataFrame select operations).
-* 
+
 Func operations are specified using Scala functions. Sql operations are specified using Spark Sql Columns.
 
 For an example see
