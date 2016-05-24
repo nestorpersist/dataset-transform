@@ -28,37 +28,46 @@ object DstDemo {
     val abc1 = ABC(5, "xxx", "alpha")
     val abc3 = ABC(10, "aaa", "aaa")
     val abcs = Seq(abc, abc1, abc3)
+    val rdd = sc.parallelize(abcs)
+    val dsABC = rdd.toDF().as[ABC]
+    debug("ABC", dsABC)
 
     val ca1 = CA("THREE", 3)
     val ca2 = CA("FIVE", 5)
     val ca3 = CA("TEN", 10)
     val cas = Seq(ca1, ca2, ca3)
     val rdd1 = sc.parallelize(cas)
-    val dsca = rdd1.toDF().as[CA]
+    val dsCA = rdd1.toDF().as[CA]
+    debug("CA", dsCA)
 
-    val rdd = sc.parallelize(abcs)
-    val ds = rdd.toDF().as[ABC]
-    debug("ABC", ds)
 
-    val select = Select[ABC, CA].map(cols => (cols.b, cols.a * 2 + cols.a))
-    val ds1 = select(ds)
-    debug("SELECT", ds1)
+    val smap = SqlMap[ABC, CA].act(cols => (cols.b, cols.a * 2 + cols.a))
+    val ds1 = smap(dsABC)
+    debug("SMAP", ds1)
 
-    val transform = Transform((x: ABC) => CA(x.c, x.a))
-    val ds2 = transform(ds)
-    debug("TRANSFORM", ds2)
+    val fmap = FuncMap((x: ABC) => CA(x.c, x.a))
+    val ds2 = fmap(dsABC)
+    debug("FMAP", ds2)
 
-    val select1 = Select[ABC, BOOL].map(cols => (cols.b === cols.c, cols.a))
-    val ds3 = select1(ds)
-    debug("SELECT1", ds3)
+    val smap1 = SqlMap[ABC, BOOL].act(cols => (cols.b === cols.c, cols.a))
+    val ds3 = smap1(dsABC)
+    debug("SMAP1", ds3)
 
-    val sort1 = Sort[ABC].map(cols => Seq(cols.b.desc))
-    val ds4 = sort1(ds)
-    debug("SORT", ds4)
+    val sort1 = SqlSort[ABC].act(cols => Seq(cols.b.desc))
+    val ds4 = sort1(dsABC)
+    debug("SSORT", ds4)
 
-    val join = Join[ABC, CA, ABC].map(_.a, _.a, (abc, ca) => (abc.a, abc.b, ca.c))
-    val ds5 = join(ds, dsca)
-    debug("JOIN", ds5)
+    val join = SqlJoin[ABC, CA, ABC].act(_.a, _.a, (abc, ca) => (abc.a, abc.b, ca.c))
+    val ds5 = join(dsABC, dsCA)
+    debug("SJOIN", ds5)
+
+    val ffilter = FuncFilter((x: ABC) => x.a > 4)
+    val ds6 = ffilter(dsABC)
+    debug("FFILTER", ds6)
+
+    val sfilter = SqlFilter[ABC].act(cols => cols.a === 3 || cols.a === 5)
+    val ds7 = sfilter(dsABC)
+    debug("SFILTER", ds7)
 
     sc.stop()
   }

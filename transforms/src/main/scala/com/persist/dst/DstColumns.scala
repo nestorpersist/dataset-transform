@@ -6,7 +6,7 @@ import scala.reflect.runtime.universe._
 object DstColumns {
 
   // TODO desc only available for sort
-  // TODO add more operations
+  // TODO add String column type (with compare ops)
   // TODO allow ops other than desc on sort???
 
   abstract class DstTransform
@@ -14,7 +14,6 @@ object DstColumns {
   private def typeTag[T](implicit tag: WeakTypeTag[T]) = {
     tag
   }
-
 
   abstract class DstColumn[TRANSFORM <: DstTransform] {
     val name: String
@@ -46,11 +45,74 @@ object DstColumns {
       }
     }
 
+    def !==(other: DstTypedColumn[TRANSFORM, TCOL]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n != ${other.name}"
+        val col = c !== other.col
+      }
+    }
+
+    def <(other: DstIntColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n < ${other.name}"
+        val col = c < other.col
+      }
+    }
+
+    def >(other: DstIntColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n > ${other.name}"
+        val col = c > other.col
+      }
+    }
+
+    def <=(other: DstIntColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n <= ${other.name}"
+        val col = c <= other.col
+      }
+    }
+
+    def >=(other: DstIntColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n >= ${other.name}"
+        val col = c >= other.col
+      }
+    }
+
     override def toString() =
       s"Column($name:${typeTag[TCOL].tpe.toString})"
   }
 
   abstract class DstIntColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Int] {
+
+    def ===(i: Int) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n === $i"
+        val col = c === i
+      }
+    }
+
+    def !==(i: Int) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n !== $i"
+        val col = c !== i
+      }
+    }
 
     def +(i: Int) = {
       val n = name
@@ -78,9 +140,98 @@ object DstColumns {
         val col = c * i
       }
     }
+
+    def *(other: DstIntColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstIntColumn[TRANSFORM] {
+        val name = s"n * ${other.name}"
+        val col = c * other.col
+      }
+    }
+
+    def <(i: Int) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n < $i"
+        val col = c < i
+      }
+    }
+
+    def >(i: Int) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n > $i"
+        val col = c > i
+      }
+    }
+
+    def <=(i: Int) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n <= $i"
+        val col = c <= i
+      }
+    }
+
+    def >=(i: Int) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n >= $i"
+        val col = c >= i
+      }
+    }
   }
 
   abstract class DstBooleanColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Boolean] {
-  }
 
+    def &&(b: Boolean) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n && $b"
+        val col = c && b
+      }
+    }
+
+    def &&(other: DstBooleanColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n && ${other.name}"
+        val col = c && other.col
+      }
+    }
+
+    def ||(b: Boolean) = {
+      val n = name
+      val c = col
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"$n || $b"
+        val col = c || b
+      }
+    }
+
+    def ||(other: DstBooleanColumn[TRANSFORM]) = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"n || ${other.name}"
+        val col = c || other.col
+      }
+    }
+
+    def !() = {
+      val c = col
+      val n = name
+      new DstBooleanColumn[TRANSFORM] {
+        val name = s"! n"
+        val col = ! c
+      }
+    }
+  }
 }

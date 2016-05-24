@@ -1,10 +1,9 @@
 package com.persist.dst
 
-//import org.apache.spark.sql.Column
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
-import scala.reflect.runtime.universe._
-import com.persist.dst.DstColumns._
+//import scala.reflect.runtime.universe._
+//import com.persist.dst.DstColumns._
 
 object DstTransforms {
   // TODO fix problem with select has only a single value
@@ -21,9 +20,9 @@ object DstTransforms {
     names
   }
 
-  def Transform[TOLD, TNEW](f: (TOLD) => TNEW): Any = macro transformImpl[TOLD, TNEW]
+  def FuncMap[TOLD, TNEW](f: (TOLD) => TNEW): Any = macro funcMapImpl[TOLD, TNEW]
 
-  def transformImpl[Told: c.WeakTypeTag, Tnew: c.WeakTypeTag]
+  def funcMapImpl[Told: c.WeakTypeTag, Tnew: c.WeakTypeTag]
   (c: Context)(f: c.Expr[Any]): c.Expr[Any] = {
     import c.universe._
     val told = c.weakTypeTag[Told].tpe
@@ -37,9 +36,9 @@ object DstTransforms {
     c.Expr(q)
   }
 
-  def Join[TA, TB, TNEW]: Any = macro joinImpl[TA, TB, TNEW]
+  def SqlJoin[TA, TB, TNEW]: Any = macro SqlJoinImpl[TA, TB, TNEW]
 
-  def joinImpl[Ta: c.WeakTypeTag, Tb: c.WeakTypeTag, Tnew: c.WeakTypeTag](c: Context): c.Expr[Any] = {
+  def SqlJoinImpl[Ta: c.WeakTypeTag, Tb: c.WeakTypeTag, Tnew: c.WeakTypeTag](c: Context): c.Expr[Any] = {
     import c.universe._
     val ta = c.weakTypeTag[Ta].tpe
     val aNames = getColumnInfo(c)(ta)
@@ -74,7 +73,7 @@ object DstTransforms {
              val acols = $acolsExp
              val bcols = $bcolsExp
 
-             def map[T](akey: (acols.type) => DstTypedColumn[ThisTransform,T],
+             def act[T](akey: (acols.type) => DstTypedColumn[ThisTransform,T],
              bkey: (bcols.type)=> DstTypedColumn[ThisTransform,T],
              fields: (acols.type,bcols.type) => (..$fields)) = {
                 val f = fields(acols,bcols)
@@ -83,16 +82,16 @@ object DstTransforms {
                   .toDF().select(..$qargs1).as[$tnew]
                  }
              }
-             override def toString() = "Join[" + ${ta.toString} +
+             override def toString() = "SqlJoin[" + ${ta.toString} +
              "," + ${tb.toString} + "," + ${tnew.toString} + "]"
           }
       """
     c.Expr(q)
   }
 
-  def Sort[T]: Any = macro sortImpl[T]
+  def SqlSort[T]: Any = macro SqlSortImpl[T]
 
-  def sortImpl[T: c.WeakTypeTag]
+  def SqlSortImpl[T: c.WeakTypeTag]
   (c: Context): c.Expr[Any] = {
     import c.universe._
     val t = c.weakTypeTag[T].tpe
@@ -105,21 +104,21 @@ object DstTransforms {
 
              val cols = $colsExp
 
-             def map(fields: (cols.type) => Seq[DstColumn[ThisTransform]]) = {
+             def act(fields: (cols.type) => Seq[DstColumn[ThisTransform]]) = {
                 val f = fields(cols).map(_.col)
                 (ds:Dataset[$t]) => {
                   ds.toDF().sort(f:_*).as[$t]
                  }
              }
-             override def toString() = "Sort[" + ${t.toString} + "]"
+             override def toString() = "SqlSort[" + ${t.toString} + "]"
           }
       """
     c.Expr(q)
   }
 
-  def Select[TOLD, TNEW]: Any = macro selectImpl[TOLD, TNEW]
+  def SqlMap[TOLD, TNEW]: Any = macro sqlMapImpl[TOLD, TNEW]
 
-  def selectImpl[Told: c.WeakTypeTag, Tnew: c.WeakTypeTag]
+  def sqlMapImpl[Told: c.WeakTypeTag, Tnew: c.WeakTypeTag]
   (c: Context): c.Expr[Any] = {
     import c.universe._
     val told = c.weakTypeTag[Told].tpe
@@ -148,13 +147,56 @@ object DstTransforms {
 
              val cols = $colsExp
 
-             def map(fields: (cols.type) => (..$fields)) = {
+             def act(fields: (cols.type) => (..$fields)) = {
                 val f = fields(cols)
                 (ds:Dataset[$told]) => {
                   ds.toDF().select(..$qargs1).as[$tnew]
                  }
              }
-             override def toString() = "Select[" + ${told.toString} + "," + ${tnew.toString} + "]"
+             override def toString() = "SqlMap[" + ${told.toString} + "," + ${tnew.toString} + "]"
+          }
+      """
+    c.Expr(q)
+  }
+
+  def FuncFilter[TOLD](f: (TOLD) => Boolean): Any = macro funcFilterImpl[TOLD]
+
+  def funcFilterImpl[Told: c.WeakTypeTag]
+  (c: Context)(f: c.Expr[Any]): c.Expr[Any] = {
+    import c.universe._
+    val told = c.weakTypeTag[Told].tpe
+    //val tnew = c.weakTypeTag[Tnew].tpe
+    val q =
+      q"""
+      (ds:Dataset[$told]) => {
+        ds.filter($f)
+      }
+      """
+    c.Expr(q)
+  }
+
+  def SqlFilter[TOLD]: Any = macro sqlFilterImpl[TOLD]
+
+  def sqlFilterImpl[Told: c.WeakTypeTag]
+  (c: Context): c.Expr[Any] = {
+    import c.universe._
+    val told = c.weakTypeTag[Told].tpe
+    val oldNames = getColumnInfo(c)(told)
+    val colsExp = getColumns(c)(told, "")
+    val q =
+      q"""
+         new {
+             class ThisTransform extends DstTransform
+
+             val cols = $colsExp
+
+             def act(fields: (cols.type) => DstBooleanColumn[ThisTransform]) = {
+                val f = fields(cols)
+                (ds:Dataset[$told]) => {
+                  ds.toDF().filter(f.col).as[$told]
+                 }
+             }
+             override def toString() = "SqlFilter[" + ${told.toString} + "]"
           }
       """
     c.Expr(q)
@@ -194,4 +236,5 @@ object DstTransforms {
     val q1 = q"""new { ..$names }"""
     c.Expr(q1)
   }
+
 }
