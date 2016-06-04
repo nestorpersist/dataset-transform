@@ -1,22 +1,27 @@
 ## Strongly typed Scala operations for working with Spark Datasets
 
 The addition of Datasets to Spark was a big step forward for Scala developers
-by providing statically typing rather than the dynamic typing of DataFrames.
+by providing static typing rather than the dynamic typing of DataFrames.
 Sadly, many operations on Datasets still require dynamic types where checking 
 occurs at run-time.
 
 The purpose of this project is to add a new set of transforms on Scala Datasets
-that are fully statically typed.
+that are fully static typing so checking of existance of field names and the types
+of fields can occur entirely at compile-time.
 
 The transforms operate on Datasets whose element type is a Scala case class. Each transform
 takes one or more Datasets and transforms them to produce a new Dataset.
 
 The current transforms are:
 
-* **Transform** (implemented via RDD map operation).
-* **Select** (implemented via DataFrame select operation).
-* **Sort** (implemented via DataFrame sort operation).
-* **Join** (implemented via Dataset joinWith and DataFrame select operations).
+* **FuncMap** (implemented via RDD map operation).
+* **FuncFilter** (implemented via Dataset filter operation).
+* **SqlMap** (implemented via DataFrame select operation).
+* **SqlFilter** (implemented via DataFrame filter operation).
+* **SqlSort** (implemented via DataFrame sort operation).
+* **SqlJoin** (implemented via Dataset joinWith and DataFrame select operations).
+
+Func operations are specified using Scala functions. Sql operations are specified using Spark Sql Columns.
 
 For an example see
 
@@ -24,7 +29,7 @@ For an example see
     
 To use code include
 
-    "com.persist" % "dataset-transforms_2.11" % "0.0.1"
+    "com.persist" % "dataset-transforms_2.11" % "0.0.2"
 
 The implementation of these transforms makes use of Scala Whitebox macros.
 These work fine in SBT and Eclipse but unfortunately are not fully supported in 
