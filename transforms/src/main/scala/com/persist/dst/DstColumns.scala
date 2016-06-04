@@ -15,7 +15,8 @@ object DstColumns {
     tag
   }
 
-  abstract class DstColumn[TRANSFORM <: DstTransform] {
+
+  trait DstColumn[TRANSFORM <: DstTransform] {
     val name: String
     val col: Column
 
@@ -33,8 +34,10 @@ object DstColumns {
     }
   }
 
+  abstract class AggTypedColumn[TRANSFORM <: DstTransform, TCOL:TypeTag]
+
   abstract class DstTypedColumn[TRANSFORM <: DstTransform, TCOL: TypeTag]
-    extends DstColumn[TRANSFORM] {
+    extends AggTypedColumn[TRANSFORM, TCOL] with DstColumn[TRANSFORM]  {
 
     def ===(other: DstTypedColumn[TRANSFORM, TCOL]) = {
       val c = col
@@ -94,7 +97,7 @@ object DstColumns {
       s"Column($name:${typeTag[TCOL].tpe.toString})"
   }
 
-  abstract class DstIntColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Int] {
+    abstract class DstIntColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Int]  {
 
     def ===(i: Int) = {
       val n = name
@@ -185,6 +188,22 @@ object DstColumns {
         val col = c >= i
       }
     }
+
+    def sum = {
+      new AggIntColumn[TRANSFORM](this, "sum")
+    }
+
+    def count = {
+      new AggIntColumn[TRANSFORM](this, "count")
+    }
+
+    def max = {
+      new AggIntColumn[TRANSFORM](this, "max")
+    }
+  }
+
+  class AggIntColumn[TRANSFORM <: DstTransform](val col:DstIntColumn[TRANSFORM], val kind:String) extends AggTypedColumn[TRANSFORM, Int] {
+    override def toString() = s"$col.$kind"
   }
 
   abstract class DstBooleanColumn[TRANSFORM <: DstTransform] extends DstTypedColumn[TRANSFORM, Boolean] {

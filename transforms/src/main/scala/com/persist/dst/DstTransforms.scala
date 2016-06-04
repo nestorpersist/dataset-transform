@@ -1,5 +1,8 @@
 package com.persist.dst
 
+import com.persist.dst.DstColumns.{AggIntColumn, DstTransform}
+import org.apache.spark.sql.DataFrame
+
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
 //import scala.reflect.runtime.universe._
@@ -49,13 +52,7 @@ object DstTransforms {
     val acolsExp = getColumns(c)(ta, "_1")
     val bcolsExp = getColumns(c)(tb, "_2")
     val fields = newNames map { case (name, ty) =>
-      if (ty == c.weakTypeTag[Int]) {
-        tq"DstIntColumn[ThisTransform]"
-      } else if (ty == c.weakTypeOf[Boolean]) {
-        tq"DstBooleanColumn[ThisTransform]"
-      } else {
-        tq"DstTypedColumn[ThisTransform,$ty]"
-      }
+      tq"DstTypedColumn[ThisTransform,$ty]"
     }
     val qargs1 = for (((n, ty), i) <- newNames.zipWithIndex) yield {
       val pos = TermName(s"_${i + 1}")
@@ -127,13 +124,7 @@ object DstTransforms {
     val newNames = getColumnInfo(c)(tnew)
     val colsExp = getColumns(c)(told, "")
     val fields = newNames map { case (name, ty) =>
-      if (ty == c.weakTypeTag[Int]) {
-        tq"DstIntColumn[ThisTransform]"
-      } else if (ty == c.weakTypeOf[Boolean]) {
-        tq"DstBooleanColumn[ThisTransform]"
-      } else {
-        tq"DstTypedColumn[ThisTransform,$ty]"
-      }
+      tq"DstTypedColumn[ThisTransform,$ty]"
     }
 
     val qargs1 = for (((n, ty), i) <- newNames.zipWithIndex) yield {
@@ -159,13 +150,69 @@ object DstTransforms {
     c.Expr(q)
   }
 
+
+  def SqlAgg[TOLD, TNEW]: Any = macro sqlAggImpl[TOLD, TNEW]
+
+  def sqlAggImpl[Told: c.WeakTypeTag, Tnew: c.WeakTypeTag]
+  (c: Context): c.Expr[Any] = {
+    import c.universe._
+    val told = c.weakTypeTag[Told].tpe
+    val oldNames = getColumnInfo(c)(told)
+    val tnew = c.weakTypeTag[Tnew].tpe
+    val newNames = getColumnInfo(c)(tnew)
+    val colsExp = getColumns(c)(told, "")
+    val fields = newNames map { case (name, ty) =>
+      if (ty.toString() == "Int") {
+        tq"AggTypedColumn[ThisTransform,$ty]"
+      } else {
+        tq"DstTypedColumn[ThisTransform,$ty]"
+      }
+    }
+
+    val qargs1 = for (((n, ty), i) <- newNames.zipWithIndex) yield {
+      val pos = TermName(s"_${i + 1}")
+      q"""(f.$pos.col).as($n)"""
+    }
+
+    val q =
+      q"""
+         new {
+             class ThisTransform extends DstTransform
+
+             def fix1(df:DataFrame, a:AggIntColumn[ThisTransform]):DataFrame = {
+               df.withColumnRenamed(a.kind ++ "(" ++  a.col.name ++ ")", a.col.name)
+               .withColumn(a.col.name, a.col.col.cast(IntegerType))
+             }
+
+             def fixAll(df:DataFrame, as:Seq[AggIntColumn[ThisTransform]]) = as.foldLeft(df)(fix1)
+
+             val cols = $colsExp
+
+             def act(fields: (cols.type) => (..$fields)) = {
+                val s = fields(cols).productIterator.toList
+                val f = s.collect{case x:DstColumn[ThisTransform] @unchecked => x}.map(_.col)
+                val a = s.collect{case x:AggIntColumn[ThisTransform] @unchecked => x}
+                val m:Map[String,String] = a.map{case aic => aic.col.name -> aic.kind}.toMap
+                (ds:Dataset[$told]) => {
+                  val df1 = ds.toDF().groupBy(f:_*).agg(m)
+                  fixAll(df1,a).as[$tnew]
+                 }
+             }
+             override def toString() = "SqlAgg[" + ${told.toString} + "," + ${tnew.toString} + "]"
+          }
+      """
+    c.Expr(q)
+  }
+
+
+
+
   def FuncFilter[TOLD](f: (TOLD) => Boolean): Any = macro funcFilterImpl[TOLD]
 
   def funcFilterImpl[Told: c.WeakTypeTag]
   (c: Context)(f: c.Expr[Any]): c.Expr[Any] = {
     import c.universe._
     val told = c.weakTypeTag[Told].tpe
-    //val tnew = c.weakTypeTag[Tnew].tpe
     val q =
       q"""
       (ds:Dataset[$told]) => {

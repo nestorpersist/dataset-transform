@@ -1,10 +1,12 @@
 package com.persist
 
 import org.apache.spark.sql._
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{SparkConf, SparkContext}
+
 import scala.language.reflectiveCalls
 import com.persist.dst.DstTransforms._
 import com.persist.dst.DstColumns._
+import org.apache.spark.sql.types.IntegerType
 
 case class ABC(a: Int, b: String, c: String)
 
@@ -72,8 +74,34 @@ object DstDemo {
     sc.stop()
   }
 
+
+  class GroupDemo {
+    def debug[T](name: String, ds: Dataset[T]) = println(s"$name: ${ds.rdd.collect.toList}")
+
+    val conf = new SparkConf().setMaster(s"local[*]").setAppName("test").set("spark.app.id", "id")
+    val sc = new SparkContext(conf)
+    val sqlc = new SQLContext(sc)
+
+    import sqlc.implicits._
+
+    val ca10 = CA("A", 3)
+    val ca11 = CA("B", 2)
+    val ca12 = CA("A", 7)
+    val ca13 = CA("B", 23)
+
+    val cas1 = Seq(ca10, ca11, ca12, ca13)
+    val dsCA1 = sc.parallelize(cas1).toDF().as[CA]
+
+    val agg = SqlAgg[CA, CA].act(cols => (cols.c, cols.a.sum))
+    val ds8 = agg(dsCA1)
+    debug("AGG", ds8)
+
+    sc.stop
+  }
+
   def main(args: Array[String]): Unit = {
     val s = new Demo
+    val g = new GroupDemo
   }
 
 }
