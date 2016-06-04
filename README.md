@@ -6,7 +6,7 @@ Sadly, many operations on Datasets still require dynamic types where checking
 occurs at run-time.
 
 The purpose of this project is to add a new set of transforms on Scala Datasets
-that are fully static typing so checking of existance of field names and the types
+that are fully static typed so checking of existance of field names and the types
 of fields can occur entirely at compile-time.
 
 The transforms operate on Datasets whose element type is a Scala case class. Each transform
@@ -20,16 +20,17 @@ The current transforms are:
 * **SqlFilter** (implemented via DataFrame filter operation).
 * **SqlSort** (implemented via DataFrame sort operation).
 * **SqlJoin** (implemented via Dataset joinWith and DataFrame select operations).
+* **SqlAgg** (implemented via DataFrame groupBy and GroupedData agg operations).
 
 Func operations are specified using Scala functions. Sql operations are specified using Spark Sql Columns.
 
-For an example see
+For examples see
 
     demo/src/main/scala/com/persist/DstDemo.scala
     
 To use code include
 
-    "com.persist" % "dataset-transforms_2.11" % "0.0.2"
+    "com.persist" % "dataset-transforms_2.11" % "0.0.3"
 
 The implementation of these transforms makes use of Scala Whitebox macros.
 These work fine in SBT and Eclipse but unfortunately are not fully supported in 
