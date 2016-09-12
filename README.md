@@ -6,7 +6,7 @@ Sadly, many operations on Datasets still require dynamic types where checking
 occurs at run-time.
 
 The purpose of this project is to add a new set of transforms on Scala Datasets
-that are fully static typing so checking of existance of field names and the types
+that are fully static typed so checking of existence of field names and the types
 of fields can occur entirely at compile-time.
 
 The transforms operate on Datasets whose element type is a Scala case class. Each transform
@@ -24,7 +24,7 @@ The current transforms are:
 
 Func operations are specified using Scala functions. Sql operations are specified using Spark Sql Columns.
 
-For an example see
+For examples see
 
     demo/src/main/scala/com/persist/DstDemo.scala
     
