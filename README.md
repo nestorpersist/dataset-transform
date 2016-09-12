@@ -20,6 +20,7 @@ The current transforms are:
 * **SqlFilter** (implemented via DataFrame filter operation).
 * **SqlSort** (implemented via DataFrame sort operation).
 * **SqlJoin** (implemented via Dataset joinWith and DataFrame select operations).
+* **SqlAgg** (implemented via DataFrame groupBy and KeyedValueGroupedDataset agg operations)
 
 Func operations are specified using Scala functions. Sql operations are specified using Spark Sql Columns.
 
@@ -29,7 +30,7 @@ For an example see
     
 To use code include
 
-    "com.persist" % "dataset-transforms_2.11" % "0.0.2"
+    "com.persist" % "dataset-transforms_2.11" % "0.0.5"
 
 The implementation of these transforms makes use of Scala Whitebox macros.
 These work fine in SBT and Eclipse but unfortunately are not fully supported in 

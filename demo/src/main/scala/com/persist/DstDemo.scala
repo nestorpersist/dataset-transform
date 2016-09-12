@@ -2,7 +2,6 @@ package com.persist
 
 import org.apache.spark.sql._
 import org.apache.spark.{SparkConf, SparkContext}
-
 import scala.language.reflectiveCalls
 import com.persist.dst.DstTransforms._
 import com.persist.dst.DstColumns._
@@ -16,21 +15,40 @@ case class BOOL(b: Boolean, i: Int)
 
 object DstDemo {
 
+  def debug[T](name: String, ds: Dataset[T]) = println(s"$name: ${ds.rdd.collect.toList}")
 
-  class Demo {
-    def debug[T](name: String, ds: Dataset[T]) = println(s"$name: ${ds.rdd.collect.toList}")
+  val abc = ABC(3, "foo", "test")
+  val abc1 = ABC(5, "xxx", "alpha")
+  val abc3 = ABC(10, "aaa", "aaa")
+  val abcs = Seq(abc, abc1, abc3)
 
-    val conf = new SparkConf().setMaster(s"local[*]").setAppName("test").set("spark.app.id", "id")
-    val sc = new SparkContext(conf)
-    val sqlc = new SQLContext(sc)
+  val ca10 = CA("A", 3)
+  val ca11 = CA("B", 2)
+  val ca12 = CA("A", 7)
+  val ca13 = CA("B", 23)
+  val cas1 = Seq(ca10, ca11, ca12, ca13)
 
-    import sqlc.implicits._
+  class Datasets(spark:SparkSession) {
 
-    val abc = ABC(3, "foo", "test")
-    val abc1 = ABC(5, "xxx", "alpha")
-    val abc3 = ABC(10, "aaa", "aaa")
-    val abcs = Seq(abc, abc1, abc3)
-    val rdd = sc.parallelize(abcs)
+    import spark.implicits._
+
+    val ds = abcs.toDS()
+
+    /* Compile time type checking - but must pass closure */
+    val ds1 = ds.map(abc => CA(abc.b, abc.a * 2 + abc.a))
+    debug("DS-MAP", ds1)
+    /* Can be query optimized - but run-time type and field name checking */
+    val ds2 = ds.select($"b" as "c", ($"a" * 2 + $"a") as "a").as[CA]
+    debug("DS_SELECT", ds2)
+
+  }
+
+
+  class Demo(spark:SparkSession) {
+
+    import spark.implicits._
+
+    val rdd = spark.sparkContext.parallelize(abcs)
     val dsABC = rdd.toDF().as[ABC]
     debug("ABC", dsABC)
 
@@ -38,7 +56,7 @@ object DstDemo {
     val ca2 = CA("FIVE", 5)
     val ca3 = CA("TEN", 10)
     val cas = Seq(ca1, ca2, ca3)
-    val rdd1 = sc.parallelize(cas)
+    val rdd1 = spark.sparkContext.parallelize(cas)
     val dsCA = rdd1.toDF().as[CA]
     debug("CA", dsCA)
 
@@ -71,37 +89,38 @@ object DstDemo {
     val ds7 = sfilter(dsABC)
     debug("SFILTER", ds7)
 
-    sc.stop()
   }
 
 
-  class GroupDemo {
-    def debug[T](name: String, ds: Dataset[T]) = println(s"$name: ${ds.rdd.collect.toList}")
+  class GroupDemo(spark:SparkSession) {
 
-    val conf = new SparkConf().setMaster(s"local[*]").setAppName("test").set("spark.app.id", "id")
-    val sc = new SparkContext(conf)
-    val sqlc = new SQLContext(sc)
+    import spark.implicits._
 
-    import sqlc.implicits._
-
-    val ca10 = CA("A", 3)
-    val ca11 = CA("B", 2)
-    val ca12 = CA("A", 7)
-    val ca13 = CA("B", 23)
-
-    val cas1 = Seq(ca10, ca11, ca12, ca13)
-    val dsCA1 = sc.parallelize(cas1).toDF().as[CA]
+    val dsCA1 = spark.sparkContext.parallelize(cas1).toDF().as[CA]
 
     val agg = SqlAgg[CA, CA].act(cols => (cols.c, cols.a.sum))
     val ds8 = agg(dsCA1)
     debug("AGG", ds8)
-
-    sc.stop
   }
 
   def main(args: Array[String]): Unit = {
-    val s = new Demo
-    val g = new GroupDemo
+    val conf = new SparkConf().setMaster(s"local[*]").setAppName("test").set("spark.app.id", "id")
+
+    val spark: SparkSession = SparkSession
+    .builder()
+    .appName("test")
+    .config(conf)
+    .getOrCreate()
+
+    println("")
+    val d = new Datasets(spark)
+    println("")
+    val s = new Demo(spark)
+    println("")
+    val g = new GroupDemo(spark)
+    println("")
+
+    spark.stop
   }
 
 }

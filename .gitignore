@@ -7,6 +7,7 @@
 .DS_Store
 .project
 .settings
+demo/.cache-main
 .classpath
 .idea*
 data/

@@ -2,15 +2,15 @@ name := "dataset-transforms"
 
 organization := "com.persist"
 
-version := "0.0.3"
+version := "0.0.5"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature")
 
 libraryDependencies ++= Seq(
-  "org.apache.spark" % "spark-core_2.11" % "1.6.1",
-  "org.apache.spark" % "spark-sql_2.11" % "1.6.1"
+  "org.apache.spark" % "spark-core_2.11" % "2.0.0",
+  "org.apache.spark" % "spark-sql_2.11" % "2.0.0"
 )
 
 publishTo <<= version { v: String =>
